@@ -20,6 +20,15 @@ from .domain import domain_to_sql
 logger = logging.getLogger(__name__)
 
 
+def _get_access_controller(env: Environment):
+    """Get access controller for security checks.
+
+    Lazy import to avoid circular dependencies.
+    """
+    from openflow.server.core.security import AccessController
+    return AccessController(env)
+
+
 class ModelMetaclass(type):
     """
     Metaclass for ORM models
@@ -107,6 +116,7 @@ class Model(metaclass=ModelMetaclass):
     _inherits: Dict[str, str] = {}
     _order: str = 'id'
     _rec_name: str = 'name'
+    _check_company_auto: bool = True  # Automatically apply company filtering
 
     _fields: Dict[str, Field] = {}
     _metadata: MetaData = MetaData()
@@ -229,6 +239,11 @@ class Model(metaclass=ModelMetaclass):
         Returns:
             RecordSet with created record(s)
         """
+        # Check create access
+        if self._env and self._env.user:
+            access_controller = _get_access_controller(self._env)
+            access_controller.check_model_access(self._name, 'create')
+
         if not isinstance(vals, list):
             vals = [vals]
 
@@ -283,6 +298,11 @@ class Model(metaclass=ModelMetaclass):
         if not self._ids:
             return True
 
+        # Check write access
+        if self._env and self._env.user:
+            access_controller = _get_access_controller(self._env)
+            access_controller.check_model_access(self._name, 'write')
+
         session: AsyncSession = self._env.session
 
         # Validate readonly fields
@@ -324,6 +344,11 @@ class Model(metaclass=ModelMetaclass):
         if not self._ids:
             return True
 
+        # Check unlink access
+        if self._env and self._env.user:
+            access_controller = _get_access_controller(self._env)
+            access_controller.check_model_access(self._name, 'unlink')
+
         session: AsyncSession = self._env.session
 
         # Build DELETE query
@@ -355,6 +380,11 @@ class Model(metaclass=ModelMetaclass):
         if not self._ids:
             return []
 
+        # Check read access
+        if self._env and self._env.user:
+            access_controller = _get_access_controller(self._env)
+            access_controller.check_model_access(self._name, 'read')
+
         session: AsyncSession = self._env.session
 
         # Determine fields to read
@@ -364,6 +394,11 @@ class Model(metaclass=ModelMetaclass):
             # Ensure 'id' is included
             if 'id' not in fields:
                 fields = ['id'] + fields
+
+        # Apply field-level security
+        if self._env and self._env.user:
+            access_controller = _get_access_controller(self._env)
+            fields = access_controller.filter_fields(self._name, fields)
 
         # Build SELECT query
         table_name = self._get_table_name()
@@ -406,6 +441,32 @@ class Model(metaclass=ModelMetaclass):
         Returns:
             RecordSet with matching records
         """
+        # Check read access
+        if self._env and self._env.user:
+            access_controller = _get_access_controller(self._env)
+            access_controller.check_model_access(self._name, 'read')
+
+            # Apply record rules (row-level security)
+            domain = access_controller.apply_record_rules(
+                self._name,
+                'read',
+                domain
+            )
+
+            # Apply multi-company filtering if model has company_id field
+            if self._check_company_auto and 'company_id' in self._fields:
+                # Check if company filter is already in domain
+                has_company_filter = False
+                if domain:
+                    for item in domain:
+                        if isinstance(item, tuple) and item[0] == 'company_id':
+                            has_company_filter = True
+                            break
+
+                # Apply automatic company filtering if not already present
+                if not has_company_filter:
+                    domain = access_controller.apply_company_filter(domain)
+
         session: AsyncSession = self._env.session
 
         # Build SELECT query
@@ -451,6 +512,32 @@ class Model(metaclass=ModelMetaclass):
         Returns:
             Number of matching records
         """
+        # Check read access and apply record rules
+        if self._env and self._env.user:
+            access_controller = _get_access_controller(self._env)
+            access_controller.check_model_access(self._name, 'read')
+
+            # Apply record rules (row-level security)
+            domain = access_controller.apply_record_rules(
+                self._name,
+                'read',
+                domain
+            )
+
+            # Apply multi-company filtering if model has company_id field
+            if self._check_company_auto and 'company_id' in self._fields:
+                # Check if company filter is already in domain
+                has_company_filter = False
+                if domain:
+                    for item in domain:
+                        if isinstance(item, tuple) and item[0] == 'company_id':
+                            has_company_filter = True
+                            break
+
+                # Apply automatic company filtering if not already present
+                if not has_company_filter:
+                    domain = access_controller.apply_company_filter(domain)
+
         session: AsyncSession = self._env.session
 
         # Build COUNT query

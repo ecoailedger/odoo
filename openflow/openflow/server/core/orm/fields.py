@@ -27,6 +27,7 @@ class Field:
         index: Whether to create database index
         copy: Whether to copy field value when duplicating record
         help: Help text for the field
+        groups: Comma-separated list of group external IDs that can access this field
     """
 
     _field_type = 'field'
@@ -47,6 +48,7 @@ class Field:
         index: bool = False,
         copy: bool = True,
         help: str = '',
+        groups: Optional[str] = None,
         **kwargs
     ):
         self.string = string
@@ -62,6 +64,7 @@ class Field:
         self.index = index
         self.copy = copy
         self.help = help
+        self.groups = groups  # Comma-separated group external IDs
         self.name = None  # Will be set by metaclass
         self.model_name = None  # Will be set by metaclass
         self.kwargs = kwargs
