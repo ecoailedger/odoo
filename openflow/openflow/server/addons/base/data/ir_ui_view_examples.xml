@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Example Form View with All Features -->
+        <record id="view_partner_form_example" model="ir.ui.view">
+            <field name="name">res.partner.form.example</field>
+            <field name="model">res.partner</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Partner">
+                    <header>
+                        <button name="action_confirm" type="object" string="Confirm" class="oe_highlight"/>
+                        <button name="action_cancel" type="object" string="Cancel"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,done"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_orders" type="object" class="oe_stat_button" icon="fa-shopping-cart">
+                                <field name="order_count" widget="statinfo" string="Orders"/>
+                            </button>
+                        </div>
+                        <field name="image" widget="image" class="oe_avatar"/>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Partner Name" required="1"/>
+                            </h1>
+                            <h2>
+                                <field name="company_name" placeholder="Company"/>
+                            </h2>
+                        </div>
+                        <group>
+                            <group string="Contact Information">
+                                <field name="email" widget="email"/>
+                                <field name="phone" widget="phone"/>
+                                <field name="mobile" widget="phone"/>
+                                <field name="website" widget="url"/>
+                            </group>
+                            <group string="General Information">
+                                <field name="company_id"/>
+                                <field name="user_id"/>
+                                <field name="category_id" widget="many2many_tags"/>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Contacts &amp; Addresses" name="contacts">
+                                <field name="child_ids">
+                                    <tree editable="bottom">
+                                        <field name="name"/>
+                                        <field name="type"/>
+                                        <field name="email"/>
+                                        <field name="phone"/>
+                                        <field name="city"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Sales &amp; Purchases" name="sales">
+                                <group>
+                                    <group string="Sales">
+                                        <field name="customer_rank"/>
+                                        <field name="sale_order_count"/>
+                                    </group>
+                                    <group string="Purchases">
+                                        <field name="supplier_rank"/>
+                                        <field name="purchase_order_count"/>
+                                    </group>
+                                </group>
+                            </page>
+                            <page string="Accounting" name="accounting">
+                                <group>
+                                    <field name="property_payment_term_id"/>
+                                    <field name="property_account_position_id"/>
+                                </group>
+                            </page>
+                            <page string="Internal Notes" name="internal_notes">
+                                <field name="comment" placeholder="Add internal notes..."/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <!-- Example Tree View -->
+        <record id="view_partner_tree_example" model="ir.ui.view">
+            <field name="name">res.partner.tree.example</field>
+            <field name="model">res.partner</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Partners"
+                      decoration-danger="state=='blocked'"
+                      decoration-success="state=='approved'"
+                      decoration-muted="active==False">
+                    <field name="name"/>
+                    <field name="email"/>
+                    <field name="phone"/>
+                    <field name="city"/>
+                    <field name="country_id"/>
+                    <field name="state" invisible="1"/>
+                    <field name="active" invisible="1"/>
+                    <button name="action_approve" type="object" string="Approve" icon="fa-check"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Example Kanban View -->
+        <record id="view_partner_kanban_example" model="ir.ui.view">
+            <field name="name">res.partner.kanban.example</field>
+            <field name="model">res.partner</field>
+            <field name="type">kanban</field>
+            <field name="arch" type="xml">
+                <kanban default_group_by="state" quick_create="true">
+                    <field name="id"/>
+                    <field name="name"/>
+                    <field name="email"/>
+                    <field name="phone"/>
+                    <field name="image"/>
+                    <field name="state"/>
+                    <field name="color"/>
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_card oe_kanban_global_click">
+                                <div class="o_kanban_image">
+                                    <img t-att-src="kanban_image('res.partner', 'image', record.id.raw_value)" alt="Partner"/>
+                                </div>
+                                <div class="oe_kanban_details">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="name"/>
+                                    </strong>
+                                    <ul>
+                                        <li t-if="record.email.raw_value">
+                                            <i class="fa fa-envelope"/> <field name="email"/>
+                                        </li>
+                                        <li t-if="record.phone.raw_value">
+                                            <i class="fa fa-phone"/> <field name="phone"/>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Example Search View -->
+        <record id="view_partner_search_example" model="ir.ui.view">
+            <field name="name">res.partner.search.example</field>
+            <field name="model">res.partner</field>
+            <field name="type">search</field>
+            <field name="arch" type="xml">
+                <search string="Partners">
+                    <field name="name" filter_domain="['|', ('name', 'ilike', self), ('email', 'ilike', self)]"/>
+                    <field name="email"/>
+                    <field name="phone"/>
+                    <field name="city"/>
+                    <field name="country_id"/>
+                    <field name="category_id"/>
+                    <separator/>
+                    <filter name="customers" string="Customers" domain="[('customer_rank', '>', 0)]"/>
+                    <filter name="suppliers" string="Suppliers" domain="[('supplier_rank', '>', 0)]"/>
+                    <separator/>
+                    <filter name="inactive" string="Archived" domain="[('active', '=', False)]"/>
+                    <group expand="0" string="Group By">
+                        <filter name="group_country" string="Country" context="{'group_by': 'country_id'}"/>
+                        <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
+                        <filter name="group_company" string="Company" context="{'group_by': 'company_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Example Calendar View -->
+        <record id="view_meeting_calendar_example" model="ir.ui.view">
+            <field name="name">calendar.event.calendar.example</field>
+            <field name="model">calendar.event</field>
+            <field name="type">calendar</field>
+            <field name="arch" type="xml">
+                <calendar string="Meetings"
+                          date_start="start_date"
+                          date_stop="end_date"
+                          color="partner_id"
+                          mode="month">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="location"/>
+                </calendar>
+            </field>
+        </record>
+
+        <!-- Example Pivot View -->
+        <record id="view_sales_pivot_example" model="ir.ui.view">
+            <field name="name">sale.order.pivot.example</field>
+            <field name="model">sale.order</field>
+            <field name="type">pivot</field>
+            <field name="arch" type="xml">
+                <pivot string="Sales Analysis" display_quantity="true">
+                    <field name="partner_id" type="row"/>
+                    <field name="state" type="col"/>
+                    <field name="amount_total" type="measure"/>
+                    <field name="product_qty" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- Example Graph View -->
+        <record id="view_sales_graph_example" model="ir.ui.view">
+            <field name="name">sale.order.graph.example</field>
+            <field name="model">sale.order</field>
+            <field name="type">graph</field>
+            <field name="arch" type="xml">
+                <graph string="Sales Analysis" type="bar" stacked="True">
+                    <field name="date_order" type="row" interval="month"/>
+                    <field name="amount_total" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- Example View Inheritance -->
+        <record id="view_partner_form_inherit_example" model="ir.ui.view">
+            <field name="name">res.partner.form.inherit.example</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="view_partner_form_example"/>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <!-- Add field after email -->
+                <xpath expr="//field[@name='email']" position="after">
+                    <field name="vat"/>
+                </xpath>
+
+                <!-- Add new page to notebook -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="Extra Information" name="extra_info">
+                        <group>
+                            <field name="ref"/>
+                            <field name="barcode"/>
+                        </group>
+                    </page>
+                </xpath>
+
+                <!-- Modify field attributes -->
+                <xpath expr="//field[@name='phone']" position="attributes">
+                    <attribute name="required">1</attribute>
+                </xpath>
+
+                <!-- Replace a field -->
+                <xpath expr="//field[@name='category_id']" position="replace">
+                    <field name="category_id" widget="many2many_checkboxes"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>
