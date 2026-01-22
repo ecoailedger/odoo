@@ -4,7 +4,13 @@ res.users - User Management
 User accounts and authentication.
 """
 from datetime import datetime
+from typing import Dict, Any, List
 from openflow.server.core.orm import Model, fields
+from openflow.server.core.security import (
+    hash_password,
+    verify_password,
+    verify_and_update,
+)
 
 
 class ResUsers(Model):
@@ -181,13 +187,75 @@ class ResUsers(Model):
         Returns:
             True if authentication successful
         """
-        # TODO: Implement proper password hashing with passlib
-        # This is a placeholder
-        return self.password == password
+        if not self.password:
+            return False
+
+        # Verify password and check if hash needs updating
+        verified, new_hash = verify_and_update(password, self.password)
+
+        # If password is correct and hash needs updating, update it
+        if verified and new_hash:
+            self.write({'password': new_hash})
+
+        return verified
 
     def update_login_date(self):
         """Update the last login date"""
         self.write({'login_date': datetime.now()})
+
+    def set_password(self, new_password: str) -> None:
+        """
+        Set a new password for the user (with hashing)
+
+        Args:
+            new_password: Plain text password to set
+        """
+        hashed = hash_password(new_password)
+        self.write({'password': hashed})
+
+    def check_password(self, password: str) -> bool:
+        """
+        Check if password matches (alias for authenticate)
+
+        Args:
+            password: Plain text password to check
+
+        Returns:
+            True if password matches
+        """
+        return self.authenticate(password)
+
+    async def create(self, vals: Dict[str, Any]) -> "ResUsers":
+        """
+        Override create to hash passwords automatically
+
+        Args:
+            vals: Values to create user with
+
+        Returns:
+            Created user record
+        """
+        # Hash password if provided
+        if 'password' in vals and vals['password']:
+            vals['password'] = hash_password(vals['password'])
+
+        return await super().create(vals)
+
+    async def write(self, vals: Dict[str, Any]) -> bool:
+        """
+        Override write to hash passwords automatically
+
+        Args:
+            vals: Values to update
+
+        Returns:
+            True if successful
+        """
+        # Hash password if being updated
+        if 'password' in vals and vals['password']:
+            vals['password'] = hash_password(vals['password'])
+
+        return await super().write(vals)
 
     def __repr__(self):
         return f"<ResUsers {self.login}>"

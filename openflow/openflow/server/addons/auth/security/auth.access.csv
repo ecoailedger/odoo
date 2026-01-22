@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_auth_session_user,auth.session user,auth.session,base.group_user,1,1,1,1
+access_auth_session_public,auth.session public,auth.session,,0,0,0,0
+access_auth_api_key_user,auth.api.key user,auth.api.key,base.group_user,1,0,0,0
+access_auth_api_key_admin,auth.api.key admin,auth.api.key,base.group_system,1,1,1,1
+access_auth_log_user,auth.log user,auth.log,base.group_user,1,0,0,0
+access_auth_log_admin,auth.log admin,auth.log,base.group_system,1,1,1,1
