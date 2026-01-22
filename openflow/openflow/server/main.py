@@ -2,6 +2,7 @@
 Main FastAPI application
 """
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -10,6 +11,7 @@ import logging
 
 from openflow.server.config.settings import settings
 from openflow.server.core.database import init_db, close_db
+from openflow.server.core.modules import module_registry
 
 # Configure logging
 logging.basicConfig(
@@ -36,6 +38,23 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise
+
+    # Initialize module system
+    try:
+        logger.info("Initializing module system...")
+        addons_path = Path(__file__).parent / "addons"
+        module_registry.initialize([addons_path])
+        logger.info(f"Discovered {len(module_registry.modules)} modules")
+
+        # Load auto-install modules (e.g., base)
+        auto_install = module_registry.loader.get_auto_install_modules()
+        if auto_install:
+            logger.info(f"Loading {len(auto_install)} auto-install modules...")
+            module_registry.load_modules([m.name for m in auto_install])
+            logger.info("Auto-install modules loaded successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize modules: {e}")
+        # Don't raise - allow app to start even if modules fail to load
 
     yield
 
