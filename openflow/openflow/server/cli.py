@@ -57,6 +57,24 @@ def main():
     # Shell command
     shell_parser = subparsers.add_parser("shell", help="Interactive Python shell")
 
+    # Module command
+    module_parser = subparsers.add_parser("module", help="Module operations")
+    module_parser.add_argument(
+        "action",
+        choices=["list", "install", "upgrade", "uninstall", "update-list"],
+        help="Module action to perform",
+    )
+    module_parser.add_argument(
+        "modules",
+        nargs="*",
+        help="Module name(s) for install/upgrade/uninstall actions",
+    )
+    module_parser.add_argument(
+        "--addons-path",
+        default=None,
+        help="Comma-separated list of addons paths",
+    )
+
     args = parser.parse_args()
 
     if args.command == "server":
@@ -70,6 +88,8 @@ def main():
         run_db_command(args.action)
     elif args.command == "shell":
         run_shell()
+    elif args.command == "module":
+        run_module_command(args.action, args.modules, args.addons_path)
     else:
         parser.print_help()
         sys.exit(1)
@@ -134,6 +154,78 @@ def run_db_command(action: str):
         sys.exit(1)
 
 
+def run_module_command(action: str, modules: list, addons_path: Optional[str]):
+    """Run module management commands"""
+    from pathlib import Path
+    from openflow.server.core.modules import module_registry
+
+    # Get addons paths
+    if addons_path:
+        paths = [Path(p.strip()) for p in addons_path.split(",")]
+    else:
+        # Default addons path
+        base_path = Path(__file__).parent / "addons"
+        paths = [base_path]
+
+    async def _list_modules():
+        """List all available modules"""
+        module_registry.initialize(paths)
+        all_modules = module_registry.list_modules()
+
+        print(f"\n{'Name':<20} {'Version':<10} {'State':<15} {'Summary':<50}")
+        print("-" * 95)
+
+        for mod in all_modules:
+            print(
+                f"{mod['name']:<20} {mod['version']:<10} "
+                f"{mod['state']:<15} {mod['summary'][:47] + '...' if len(mod['summary']) > 50 else mod['summary']:<50}"
+            )
+
+        print(f"\nTotal: {len(all_modules)} modules")
+
+    async def _install_modules():
+        """Install specified modules"""
+        if not modules:
+            print("Error: No modules specified")
+            sys.exit(1)
+
+        from openflow.server.core.database import AsyncSessionLocal
+
+        module_registry.initialize(paths)
+
+        async with AsyncSessionLocal() as session:
+            for module_name in modules:
+                print(f"\nInstalling module: {module_name}")
+                try:
+                    await module_registry.install_module(
+                        module_name, session, with_dependencies=True
+                    )
+                    print(f"✓ Successfully installed {module_name}")
+                except Exception as e:
+                    print(f"✗ Failed to install {module_name}: {e}")
+
+    async def _update_module_list():
+        """Update the list of available modules"""
+        print("Updating module list...")
+        module_registry.initialize(paths)
+        modules_found = module_registry.discover_modules()
+        print(f"✓ Found {len(modules_found)} modules")
+
+    if action == "list":
+        asyncio.run(_list_modules())
+    elif action == "install":
+        asyncio.run(_install_modules())
+    elif action == "update-list":
+        asyncio.run(_update_module_list())
+    elif action == "upgrade":
+        print("Module upgrade not yet implemented")
+    elif action == "uninstall":
+        print("Module uninstall not yet implemented")
+    else:
+        print(f"Unknown module action: {action}")
+        sys.exit(1)
+
+
 def run_shell():
     """Start an interactive Python shell"""
     try:
@@ -143,10 +235,12 @@ def run_shell():
         print("  - settings: Application settings")
         print("  - engine: Database engine")
         print("  - AsyncSessionLocal: Database session factory")
+        print("  - module_registry: Module registry")
         print("-" * 50)
 
         from openflow.server.config.settings import settings
         from openflow.server.core.database import engine, AsyncSessionLocal
+        from openflow.server.core.modules import module_registry
 
         embed(colors="neutral")
     except ImportError:
@@ -154,11 +248,13 @@ def run_shell():
         print("Starting OpenFlow interactive shell (Python)")
         print("Available imports:")
         print("  - settings: Application settings")
+        print("  - module_registry: Module registry")
         print("-" * 50)
 
         from openflow.server.config.settings import settings
+        from openflow.server.core.modules import module_registry
 
-        code.interact(local={"settings": settings})
+        code.interact(local={"settings": settings, "module_registry": module_registry})
 
 
 if __name__ == "__main__":

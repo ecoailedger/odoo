@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ir_model_all,ir.model all,ir.model,,1,0,0,0
+access_ir_model_fields_all,ir.model.fields all,ir.model.fields,,1,0,0,0
+access_ir_model_access_all,ir.model.access all,ir.model.access,,1,0,0,0
+access_ir_rule_all,ir.rule all,ir.rule,,1,0,0,0
+access_res_users_all,res.users all,res.users,,1,0,0,0
+access_res_groups_all,res.groups all,res.groups,,1,0,0,0
+access_res_company_all,res.company all,res.company,,1,0,0,0

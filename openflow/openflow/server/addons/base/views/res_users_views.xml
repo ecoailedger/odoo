@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- res.users Views -->
+        <record id="view_users_tree" model="ir.ui.view">
+            <field name="name">res.users.tree</field>
+            <field name="model">res.users</field>
+            <field name="arch" type="xml">
+                <tree string="Users">
+                    <field name="name"/>
+                    <field name="login"/>
+                    <field name="email"/>
+                    <field name="company_id"/>
+                    <field name="active"/>
+                    <field name="login_date"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_users_form" model="ir.ui.view">
+            <field name="name">res.users.form</field>
+            <field name="model">res.users</field>
+            <field name="arch" type="xml">
+                <form string="User">
+                    <sheet>
+                        <field name="image" widget="image" class="oe_avatar"/>
+                        <div class="oe_title">
+                            <h1><field name="name" placeholder="User Name"/></h1>
+                            <h2><field name="login" placeholder="Login"/></h2>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="email"/>
+                                <field name="phone"/>
+                                <field name="active"/>
+                            </group>
+                            <group>
+                                <field name="company_id"/>
+                                <field name="lang"/>
+                                <field name="tz"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Access Rights">
+                                <group>
+                                    <field name="groups_id"/>
+                                </group>
+                            </page>
+                            <page string="Multi Companies">
+                                <field name="company_ids"/>
+                            </page>
+                            <page string="Preferences">
+                                <group>
+                                    <field name="notification_type"/>
+                                    <field name="signature"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- res.groups Views -->
+        <record id="view_groups_tree" model="ir.ui.view">
+            <field name="name">res.groups.tree</field>
+            <field name="model">res.groups</field>
+            <field name="arch" type="xml">
+                <tree string="Groups">
+                    <field name="name"/>
+                    <field name="category_id"/>
+                    <field name="share"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_groups_form" model="ir.ui.view">
+            <field name="name">res.groups.form</field>
+            <field name="model">res.groups</field>
+            <field name="arch" type="xml">
+                <form string="Group">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="category_id"/>
+                            <field name="share"/>
+                        </group>
+                        <notebook>
+                            <page string="Users">
+                                <field name="users"/>
+                            </page>
+                            <page string="Inherited Groups">
+                                <field name="implied_ids"/>
+                            </page>
+                            <page string="Menus">
+                                <!-- Menus will be added when menu system is implemented -->
+                            </page>
+                            <page string="Access Rights">
+                                <field name="model_access"/>
+                            </page>
+                            <page string="Record Rules">
+                                <field name="rule_groups"/>
+                            </page>
+                            <page string="Notes">
+                                <field name="comment"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- res.company Views -->
+        <record id="view_company_tree" model="ir.ui.view">
+            <field name="name">res.company.tree</field>
+            <field name="model">res.company</field>
+            <field name="arch" type="xml">
+                <tree string="Companies">
+                    <field name="sequence" widget="handle"/>
+                    <field name="name"/>
+                    <field name="email"/>
+                    <field name="phone"/>
+                    <field name="country_id"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_company_form" model="ir.ui.view">
+            <field name="name">res.company.form</field>
+            <field name="model">res.company</field>
+            <field name="arch" type="xml">
+                <form string="Company">
+                    <sheet>
+                        <field name="logo" widget="image" class="oe_avatar"/>
+                        <div class="oe_title">
+                            <h1><field name="name" placeholder="Company Name"/></h1>
+                        </div>
+                        <group>
+                            <group string="Contact Information">
+                                <field name="email"/>
+                                <field name="phone"/>
+                                <field name="website"/>
+                            </group>
+                            <group string="General">
+                                <field name="parent_id"/>
+                                <field name="currency_id"/>
+                                <field name="vat"/>
+                                <field name="company_registry"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Address">
+                                <group>
+                                    <group>
+                                        <field name="street"/>
+                                        <field name="street2"/>
+                                        <field name="city"/>
+                                    </group>
+                                    <group>
+                                        <field name="state_id"/>
+                                        <field name="zip"/>
+                                        <field name="country_id"/>
+                                    </group>
+                                </group>
+                            </page>
+                            <page string="Configuration">
+                                <group>
+                                    <field name="primary_color"/>
+                                    <field name="secondary_color"/>
+                                </group>
+                            </page>
+                            <page string="Social Media">
+                                <group>
+                                    <field name="social_twitter"/>
+                                    <field name="social_facebook"/>
+                                    <field name="social_linkedin"/>
+                                    <field name="social_github"/>
+                                    <field name="social_youtube"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>
