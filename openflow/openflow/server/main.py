@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import logging
 
 from openflow.server.config.settings import settings
@@ -106,12 +106,43 @@ async def health_check():
     }
 
 
-# API routes will be added here
-# app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
-# app.include_router(companies.router, prefix="/api/v1/companies", tags=["companies"])
+# API routes
+from openflow.server.core.api import jsonrpc_router, rest_router
+
+# JSON-RPC endpoint
+app.include_router(jsonrpc_router)
+
+# REST API endpoints
+app.include_router(rest_router)
+
+# Static files
+static_path = Path(__file__).parent.parent.parent / "web" / "static"
+if static_path.exists():
+    app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+
+# Web client route
+@app.get("/web")
+async def web_client():
+    """Serve the web client"""
+    index_path = static_path / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return {"message": "Web client not found"}
 
 
 # Exception handlers
+from openflow.server.core.api.exceptions import APIException
+
+
+@app.exception_handler(APIException)
+async def api_exception_handler(request, exc: APIException):
+    """Handle API exceptions"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=exc.detail,
+    )
+
+
 @app.exception_handler(404)
 async def not_found_handler(request, exc):
     """Handle 404 errors"""
