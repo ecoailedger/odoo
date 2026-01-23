@@ -1,0 +1,41 @@
+# Vercel Serverless Requirements
+# Minimal dependencies for serverless deployment (without Celery)
+
+# Core FastAPI
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Database
+sqlalchemy>=2.0.25
+asyncpg>=0.29.0
+alembic>=1.13.1
+psycopg2-binary>=2.9.9
+
+# Data validation
+pydantic>=2.5.3
+pydantic-settings>=2.1.0
+
+# Security
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# HTTP & Forms
+python-multipart>=0.0.6
+httpx>=0.26.0
+
+# Redis (for caching and sessions)
+redis>=5.0.1
+
+# Utilities
+python-dateutil>=2.8.2
+jinja2>=3.1.3
+aiofiles>=23.2.1
+pillow>=10.2.0
+babel>=2.14.0
+
+# XML/Data processing
+lxml>=5.1.0
+xmltodict>=0.13.0
+
+# Reporting (optional - can be removed if not used)
+reportlab>=4.0.9

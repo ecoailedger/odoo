@@ -1,0 +1,76 @@
+# Python cache and build files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+.poetry/
+
+# Development and testing
+tests/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Database files (not needed in serverless)
+*.db
+*.sqlite
+*.sqlite3
+dump.rdb
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Docker files (not needed for Vercel)
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Git
+.git/
+.gitignore
+
+# Alembic migrations (run separately)
+alembic/
+
+# Examples and test files
+examples/
+test_*.py
+
+# Local config
+.env.local
+.env.*.local
+config.local.py
+
+# Uploads (use external storage on Vercel)
+uploads/
+media/
+static/uploads/

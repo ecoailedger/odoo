@@ -361,41 +361,55 @@ Views can extend parent views using XPath:
 </record>
 ```
 
-## Vercel Deployment Considerations
+## Vercel Deployment
 
-**Important**: This application is designed as a traditional server application with persistent database connections and background workers (Celery). Vercel's serverless architecture may not be ideal for this type of application.
+**Status**: ✅ Serverless-compatible mode implemented
 
-**Challenges**:
-1. **Database Connection Pooling**: Serverless functions should use connection pooling services (e.g., PgBouncer)
-2. **Celery Workers**: Background tasks require separate worker processes (not supported on Vercel)
-3. **Redis**: Requires external Redis service (e.g., Upstash, Redis Cloud)
-4. **File Storage**: Ephemeral filesystem requires external storage (e.g., S3, Cloudflare R2)
+The application now supports serverless deployment on Vercel with optimized cold start performance.
 
-**For Vercel Deployment**:
-- Use Vercel Postgres or external PostgreSQL with connection pooling
-- Use external Redis (Upstash Redis)
-- Disable Celery workers or use external worker service
-- Set `ENVIRONMENT=production` and proper `SECRET_KEY`
-- Consider switching to Vercel-native serverless patterns if possible
+**Quick Start**:
+```bash
+# 1. Setup external services (Neon Postgres + Upstash Redis)
+# 2. Configure environment variables in Vercel Dashboard
+# 3. Deploy: git push origin main
+```
 
-**Vercel Configuration** (`vercel.json`):
-- Entry point: `api/index.py` - Serverless function handler
-- Routes all requests through FastAPI app
-- Static files served from `web/static/` (accessible at `/static/*`)
-- Environment variables configured for production mode
+**📖 Complete Guide**: See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for comprehensive step-by-step instructions.
 
-**Frontend Considerations**:
-- Vanilla JS frontend requires no build step - works on Vercel out of the box
-- All static assets (HTML, JS, CSS) served directly from `web/static/`
-- Frontend accesses backend via `/jsonrpc` and `/api/v1/*` endpoints
-- CORS middleware configured in `main.py` for cross-origin requests
+### Key Features for Serverless
 
-**Alternative**: Consider deploying to platforms better suited for traditional apps:
+**Serverless Mode** (`SERVERLESS=true`):
+- Skips heavy module initialization for fast cold starts
+- Uses minimal database connection pooling (pool_size=1)
+- Static files served directly by Vercel (not through FastAPI)
+- Lazy initialization of database connections
+
+**Configuration Files**:
+- `vercel.json` - Routes static files directly, API through serverless function
+- `requirements-vercel.txt` - Minimal dependencies without Celery
+- `.env.vercel.example` - Required environment variables template
+- `.vercelignore` - Excludes unnecessary files from deployment
+
+**External Services Required**:
+1. **Database**: Vercel Postgres, Neon, or Supabase (with connection pooling)
+2. **Redis**: Upstash Redis (serverless-compatible)
+3. **Storage** (optional): S3, Cloudflare R2 for file uploads
+
+**Frontend**:
+- Zero build step - vanilla JS works out of the box
+- Static files routed to `/web/static/` directory
+- Access at `/web` or `/static/index.html`
+
+**Limitations**:
+- No Celery background workers (use Vercel Cron or external workers)
+- 10-second function timeout (Hobby tier) / 60 seconds (Pro tier)
+- Cold starts ~1-3 seconds with serverless mode enabled
+
+**Alternatives**: For heavy workloads or background processing:
 - Railway.app
 - Render.com
 - DigitalOcean App Platform
 - Fly.io
-- Heroku
 
 ## Common Workflows
 
@@ -514,8 +528,10 @@ Views can extend parent views using XPath:
 
 ## Documentation References
 
+- **VERCEL_DEPLOYMENT.md**: Complete Vercel deployment guide with troubleshooting
 - **VIEW_SYSTEM.md**: Comprehensive view system documentation (14,020 lines)
 - **README.md**: Project overview and quick start
+- **.env.vercel.example**: Environment variables template for Vercel
 - **API Docs**: Available at `/docs` when `DEBUG=true`
 
 ## Git Workflow

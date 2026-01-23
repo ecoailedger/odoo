@@ -30,38 +30,48 @@ async def lifespan(app: FastAPI):
     logger.info("Starting OpenFlow application...")
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"Debug mode: {settings.debug}")
+    logger.info(f"Serverless mode: {settings.is_serverless}")
 
-    # Initialize database
-    try:
-        await init_db()
-        logger.info("Database initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
-        raise
+    # Initialize database (skip in serverless mode)
+    if settings.should_init_db:
+        try:
+            await init_db()
+            logger.info("Database initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize database: {e}")
+            raise
+    else:
+        logger.info("Skipping database initialization (serverless mode)")
 
-    # Initialize module system
-    try:
-        logger.info("Initializing module system...")
-        addons_path = Path(__file__).parent / "addons"
-        module_registry.initialize([addons_path])
-        logger.info(f"Discovered {len(module_registry.modules)} modules")
+    # Initialize module system (skip in serverless mode for faster cold starts)
+    if settings.should_init_modules:
+        try:
+            logger.info("Initializing module system...")
+            addons_path = Path(__file__).parent / "addons"
+            module_registry.initialize([addons_path])
+            logger.info(f"Discovered {len(module_registry.modules)} modules")
 
-        # Load auto-install modules (e.g., base)
-        auto_install = module_registry.loader.get_auto_install_modules()
-        if auto_install:
-            logger.info(f"Loading {len(auto_install)} auto-install modules...")
-            module_registry.load_modules([m.name for m in auto_install])
-            logger.info("Auto-install modules loaded successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize modules: {e}")
-        # Don't raise - allow app to start even if modules fail to load
+            # Load auto-install modules (e.g., base)
+            auto_install = module_registry.loader.get_auto_install_modules()
+            if auto_install:
+                logger.info(f"Loading {len(auto_install)} auto-install modules...")
+                module_registry.load_modules([m.name for m in auto_install])
+                logger.info("Auto-install modules loaded successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize modules: {e}")
+            # Don't raise - allow app to start even if modules fail to load
+    else:
+        logger.info("Skipping module initialization (serverless mode)")
 
     yield
 
     # Shutdown
     logger.info("Shutting down OpenFlow application...")
-    await close_db()
-    logger.info("Database connections closed")
+    if settings.should_init_db:
+        await close_db()
+        logger.info("Database connections closed")
+    else:
+        logger.info("Skipping database cleanup (serverless mode)")
 
 
 # Create FastAPI application
@@ -92,6 +102,7 @@ async def root():
         "message": "Welcome to OpenFlow",
         "version": settings.version,
         "environment": settings.environment,
+        "serverless": settings.is_serverless,
         "docs": "/docs" if settings.debug else "disabled",
     }
 
@@ -103,6 +114,8 @@ async def health_check():
     return {
         "status": "healthy",
         "version": settings.version,
+        "environment": settings.environment,
+        "serverless": settings.is_serverless,
     }
 
 
@@ -115,19 +128,25 @@ app.include_router(jsonrpc_router)
 # REST API endpoints
 app.include_router(rest_router)
 
-# Static files
-static_path = Path(__file__).parent.parent.parent / "web" / "static"
-if static_path.exists():
-    app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+# Static files - only mount in non-serverless mode (Vercel handles static files directly)
+if not settings.is_serverless:
+    static_path = Path(__file__).parent.parent.parent / "web" / "static"
+    if static_path.exists():
+        app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+        logger.info(f"Mounted static files from: {static_path}")
+    else:
+        logger.warning(f"Static files directory not found: {static_path}")
 
-# Web client route
-@app.get("/web")
-async def web_client():
-    """Serve the web client"""
-    index_path = static_path / "index.html"
-    if index_path.exists():
-        return FileResponse(index_path)
-    return {"message": "Web client not found"}
+    # Web client route
+    @app.get("/web")
+    async def web_client():
+        """Serve the web client"""
+        index_path = static_path / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+        return {"message": "Web client not found"}
+else:
+    logger.info("Static files handled by serverless platform (e.g., Vercel)")
 
 
 # Exception handlers
