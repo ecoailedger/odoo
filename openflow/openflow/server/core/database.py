@@ -20,13 +20,21 @@ class Base(DeclarativeBase):
 
 
 # Create async engine
-engine: AsyncEngine = create_async_engine(
-    settings.database_url,
-    echo=settings.database_echo,
-    pool_size=settings.database_pool_size,
-    max_overflow=settings.database_max_overflow,
-    poolclass=NullPool if settings.is_development else None,
-)
+if settings.is_development:
+    # Development mode: use NullPool (no connection pooling)
+    engine: AsyncEngine = create_async_engine(
+        settings.database_url,
+        echo=settings.database_echo,
+        poolclass=NullPool,
+    )
+else:
+    # Production mode: use connection pooling
+    engine: AsyncEngine = create_async_engine(
+        settings.database_url,
+        echo=settings.database_echo,
+        pool_size=settings.database_pool_size,
+        max_overflow=settings.database_max_overflow,
+    )
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
