@@ -10,9 +10,18 @@ OpenFlow is an open-source ERP framework inspired by Odoo, built with FastAPI, S
 
 ## Critical Directory Structure Notes
 
-The project has an unusual directory structure with duplicate `server/` directories:
+The project has an unusual directory structure with duplicate directories:
+
+**Server Directories**:
 - `/openflow/openflow/server/` - **Primary location** with complete core framework
 - `/openflow/server/` - Partial directory with some configuration files
+
+**Web Directories**:
+- `/openflow/web/` - **Active frontend** with static files (HTML, JS, CSS)
+- `/openflow/openflow/web/` - Contains controllers only (backend web controllers)
+
+**API Entry Point**:
+- `/openflow/api/index.py` - Vercel serverless function entry point (imports from `openflow.server.main`)
 
 The API module was initially missing from the primary location and has been copied to `/openflow/openflow/server/core/api/`.
 
@@ -210,6 +219,37 @@ Dual API approach:
 
 **Usage**: Both APIs provide full CRUD operations on all registered models.
 
+#### 6. Web Client (`openflow/web/`)
+
+Vanilla JavaScript frontend using ES6 modules (no build step required):
+
+**Directory Structure**:
+- `web/static/index.html` - Main HTML entry point
+- `web/static/js/` - JavaScript modules
+  - `app.js` - Main application class, layout, routing
+  - `rpc_service.js` - Backend communication (JSON-RPC & REST)
+  - `action_manager.js` - Action handling and view orchestration
+  - `view_manager.js` - View loading and rendering
+  - `view_renderer.js` - View-specific rendering logic
+  - `field_widgets.js` - Form field widgets
+  - `notification.js` - Toast notifications
+- `web/static/css/app.css` - Application styles
+
+**Architecture**:
+- **No build process**: Pure ES6 modules served directly
+- **RPC Communication**: Singleton `rpc` service handles all backend calls
+- **Authentication**: JWT tokens stored in localStorage
+- **View System**: Dynamically renders form, tree, and other view types
+- **Event-driven**: Uses CustomEvents for cross-component communication
+
+**Key Classes**:
+- `OpenFlowApp` - Main app initialization, layout, auth flow
+- `RPCService` - Handles both JSON-RPC (`/jsonrpc`) and REST API (`/api/v1`) calls
+- `ActionManager` - Executes actions (open views, run wizards, etc.)
+- `ViewManager` - Loads view definitions and orchestrates rendering
+
+**Static File Serving**: FastAPI serves `/static/*` from `web/static/` directory.
+
 ### Configuration (`openflow/server/config/`)
 
 **settings.py** - Pydantic-based settings with environment variable support
@@ -338,6 +378,18 @@ Views can extend parent views using XPath:
 - Set `ENVIRONMENT=production` and proper `SECRET_KEY`
 - Consider switching to Vercel-native serverless patterns if possible
 
+**Vercel Configuration** (`vercel.json`):
+- Entry point: `api/index.py` - Serverless function handler
+- Routes all requests through FastAPI app
+- Static files served from `web/static/` (accessible at `/static/*`)
+- Environment variables configured for production mode
+
+**Frontend Considerations**:
+- Vanilla JS frontend requires no build step - works on Vercel out of the box
+- All static assets (HTML, JS, CSS) served directly from `web/static/`
+- Frontend accesses backend via `/jsonrpc` and `/api/v1/*` endpoints
+- CORS middleware configured in `main.py` for cross-origin requests
+
 **Alternative**: Consider deploying to platforms better suited for traditional apps:
 - Railway.app
 - Render.com
@@ -372,7 +424,34 @@ Views can extend parent views using XPath:
 - Access API docs at `http://localhost:8000/docs`
 - Use IPython shell for interactive testing: `poetry run openflow shell`
 
+### Working with the Frontend
+
+**Development**:
+1. Start the backend server: `cd openflow && poetry run uvicorn openflow.server.main:app --reload`
+2. Access the web client at `http://localhost:8000/static/index.html`
+3. Open browser DevTools to debug JavaScript
+4. No build step required - edit JS/CSS files and refresh browser
+
+**Frontend Files**:
+- All frontend code is in `openflow/web/static/`
+- Edit JS modules directly - they're loaded as ES6 modules
+- Changes take effect immediately on browser refresh
+- FastAPI serves static files from `/static/*` URL path
+
+**Testing Frontend-Backend Integration**:
+- Use browser DevTools Console to access `window.rpc` service
+- Example: `await rpc.search('res.partner', [], {limit: 10})`
+- Check Network tab to inspect JSON-RPC and REST API calls
+- Authentication tokens stored in localStorage (key: `auth_token`)
+
+**Adding New Views**:
+1. Create view definition in backend (`views/` in addon)
+2. Load view via `ActionManager.doAction()` from frontend
+3. Views are rendered dynamically using `view_renderer.js`
+
 ## Technology Stack
+
+### Backend
 
 | Component | Technology | Version |
 |-----------|------------|---------|
@@ -392,6 +471,17 @@ Views can extend parent views using XPath:
 | Code Format | Black | 24+ |
 | Linting | Ruff | 0.1+ |
 | Type Checking | MyPy | 1.8+ |
+
+### Frontend
+
+| Component | Technology | Notes |
+|-----------|------------|-------|
+| JavaScript | ES6 Modules | Native browser support, no transpiling |
+| CSS | Vanilla CSS | No preprocessor |
+| Build Tool | None | Direct file serving |
+| API Communication | Fetch API | JSON-RPC 2.0 & REST |
+| State Management | Vanilla JS | Class-based architecture |
+| Module System | ES6 import/export | Browser-native modules |
 
 ## Files Not to Modify
 
