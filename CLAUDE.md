@@ -363,18 +363,21 @@ Views can extend parent views using XPath:
 
 ## Vercel Deployment
 
-**Status**: ✅ Serverless-compatible mode implemented
+**Status**: ✅ Serverless-compatible mode implemented (TESTING MODE - NO SECURITY)
 
-The application now supports serverless deployment on Vercel with optimized cold start performance.
+⚠️ **WARNING**: Current configuration is for TESTING ONLY. All endpoints are public with no authentication required.
 
-**Quick Start**:
+The application supports serverless deployment on Vercel with optimized cold start performance.
+
+**Quick Start (5 minutes)**:
 ```bash
-# 1. Setup external services (Neon Postgres + Upstash Redis)
-# 2. Configure environment variables in Vercel Dashboard
-# 3. Deploy: git push origin main
+# 1. Get free Neon Postgres database (neon.tech)
+# 2. Get free Upstash Redis (console.upstash.com/redis)
+# 3. Set 3 env vars in Vercel: SERVERLESS=true, DATABASE_URL, REDIS_URL
+# 4. Deploy: git push origin main
 ```
 
-**📖 Complete Guide**: See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for comprehensive step-by-step instructions.
+**📖 Complete Guide**: See [VERCEL_DEPLOYMENT.md](./openflow/VERCEL_DEPLOYMENT.md) for step-by-step instructions.
 
 ### Key Features for Serverless
 
@@ -401,7 +404,9 @@ The application now supports serverless deployment on Vercel with optimized cold
 - Access at `/web` or `/static/index.html`
 
 **Limitations**:
+- ⚠️ **NO AUTHENTICATION** - All endpoints are public (for testing only!)
 - No Celery background workers (use Vercel Cron or external workers)
+- Module system disabled for faster cold starts
 - 10-second function timeout (Hobby tier) / 60 seconds (Pro tier)
 - Cold starts ~1-3 seconds with serverless mode enabled
 

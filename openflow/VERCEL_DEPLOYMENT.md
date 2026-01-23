@@ -1,171 +1,64 @@
-# Vercel Deployment Guide for OpenFlow
+# Quick Vercel Deployment for Testing
 
-This guide walks you through deploying OpenFlow to Vercel with all necessary configurations.
+⚠️ **WARNING**: This guide sets up an INSECURE deployment for testing only. No authentication or security is configured. Implement proper security before production use!
 
-## Prerequisites
+## 5-Minute Quick Start
 
-1. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
-2. **Database with Connection Pooling**: Choose one of:
-   - [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres) (Recommended for simplicity)
-   - [Neon](https://neon.tech) (Serverless Postgres with built-in pooling)
-   - [Supabase](https://supabase.com) (Postgres with connection pooler)
-3. **Redis**: [Upstash Redis](https://upstash.com) (Serverless Redis)
-4. **Vercel CLI** (optional): `npm i -g vercel`
+### 1. Setup Free Services (2 minutes)
 
-## Step-by-Step Deployment
+#### Get a Free Postgres Database
 
-### 1. Prepare External Services
+**Option A: Neon (Recommended - Easiest)**
+1. Go to [neon.tech](https://neon.tech)
+2. Sign up (free)
+3. Create a new project
+4. Copy the **"Pooled connection"** string
+5. Make sure it uses port **5432** (not 5433)
+6. Format: `postgresql+asyncpg://user:pass@host.region.neon.tech:5432/dbname`
 
-#### A. Setup Postgres Database (Choose one)
+**Option B: Vercel Postgres**
+1. In Vercel Dashboard → Your Project → Storage
+2. Click "Create Database" → Select "Postgres"
+3. Copy the connection string
 
-**Option 1: Vercel Postgres (Easiest)**
-```bash
-# In your Vercel project dashboard
-1. Go to Storage tab
-2. Click "Create Database"
-3. Select "Postgres"
-4. Copy the connection string (it includes pooling)
-```
+#### Get Free Redis
 
-**Option 2: Neon (Recommended)**
-```bash
-# Visit https://neon.tech
-1. Create a new project
-2. Get the "Pooled connection" string from dashboard
-3. Use port 5432 (not 5433)
-4. Format: postgresql+asyncpg://user:pass@host.region.neon.tech:5432/dbname
-```
+1. Go to [console.upstash.com/redis](https://console.upstash.com/redis)
+2. Sign up (free)
+3. Create a new database
+4. Copy the connection URL (starts with `rediss://`)
 
-**Option 3: Supabase**
-```bash
-# Visit https://supabase.com
-1. Create a new project
-2. Go to Database settings
-3. Use "Connection pooling" URL (port 6543)
-4. Transaction mode for better performance
-```
+### 2. Deploy to Vercel (3 minutes)
 
-#### B. Setup Redis (Upstash)
+#### Connect Your Repository
 
-```bash
-# Visit https://upstash.com
-1. Create a new Redis database
-2. Choose region close to your Vercel deployment
-3. Copy the connection URL (starts with rediss://)
-4. Format: rediss://default:password@redis-host.upstash.io:6379
-```
-
-### 2. Configure Vercel Project
-
-#### A. Connect Repository
-
-```bash
-# Option 1: Using Vercel Dashboard
-1. Go to https://vercel.com/new
+1. Go to [vercel.com/new](https://vercel.com/new)
 2. Import your Git repository
-3. Select the repository
-4. Set root directory to: openflow
+3. Configure project:
+   - **Root Directory**: `openflow`
+   - **Framework Preset**: Other
+   - **Build Command**: (leave empty)
+   - **Install Command**: `pip install -r requirements-vercel.txt`
 
-# Option 2: Using Vercel CLI
-cd openflow
-vercel link
-```
+#### Set Environment Variables
 
-#### B. Configure Build Settings
-
-In Vercel Dashboard → Project Settings → General:
-
-```
-Framework Preset: Other
-Root Directory: openflow
-Build Command: (leave empty)
-Output Directory: (leave empty)
-Install Command: pip install -r requirements-vercel.txt
-```
-
-### 3. Set Environment Variables
-
-Go to Vercel Dashboard → Project Settings → Environment Variables
-
-Add all variables from `.env.vercel.example`:
-
-#### Required Variables (Set for all environments: Production, Preview, Development)
+In Vercel Dashboard → Project Settings → Environment Variables, add these 3 variables:
 
 ```bash
-# Generate a secret key first
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-
-# Then add these variables:
-ENVIRONMENT=production
-DEBUG=false
 SERVERLESS=true
-SECRET_KEY=<your-generated-secret-key>
-DATABASE_URL=<your-postgres-connection-string>
+DATABASE_URL=<your-neon-or-vercel-postgres-url>
 REDIS_URL=<your-upstash-redis-url>
 ```
 
-#### CORS Configuration
+Make sure to set them for **all environments** (Production, Preview, Development).
 
-```bash
-# Add your Vercel domain
-CORS_ORIGINS=["https://your-app.vercel.app","https://*.vercel.app"]
-```
+#### Deploy
 
-#### Optional Variables
+Click "Deploy" and wait ~2 minutes.
 
-```bash
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
-LOG_LEVEL=INFO
-DATABASE_POOL_SIZE=1
-DATABASE_MAX_OVERFLOW=0
-DATABASE_POOL_RECYCLE=3600
-DATABASE_POOL_PRE_PING=true
-```
+### 3. Test Your Deployment
 
-### 4. Run Database Migrations
-
-**IMPORTANT**: Run migrations before deploying!
-
-```bash
-# Option 1: Locally with production database
-cd openflow
-export DATABASE_URL="<your-production-database-url>"
-poetry run alembic upgrade head
-
-# Option 2: Using a separate migration script
-# Create a one-time Vercel function to run migrations
-# (Not recommended for production)
-```
-
-### 5. Deploy to Vercel
-
-#### Option 1: Automatic Deployment (Recommended)
-
-```bash
-# Push to your main branch
-git push origin main
-
-# Vercel will automatically deploy
-# Check deployment status at https://vercel.com/dashboard
-```
-
-#### Option 2: Manual Deployment with CLI
-
-```bash
-cd openflow
-
-# Deploy to preview
-vercel
-
-# Deploy to production
-vercel --prod
-```
-
-### 6. Verify Deployment
-
-After deployment, test these endpoints:
+Once deployed, test these endpoints:
 
 ```bash
 # Health check
@@ -174,225 +67,187 @@ curl https://your-app.vercel.app/health
 # Root endpoint
 curl https://your-app.vercel.app/
 
-# Frontend (should load the web client)
-curl https://your-app.vercel.app/web
+# Web interface (open in browser)
+https://your-app.vercel.app/web
 
 # Static files
-curl https://your-app.vercel.app/static/js/app.js
+https://your-app.vercel.app/static/js/app.js
 ```
+
+## That's It!
+
+Your app should be running. The frontend is accessible at `/web` and all API endpoints work without authentication.
+
+---
 
 ## Troubleshooting
 
-### Common Issues
+### "502 Bad Gateway" or "Function Timeout"
 
-#### 1. Database Connection Errors
+- **Cause**: Cold start taking too long or database connection issues
+- **Fix**: Check function logs in Vercel Dashboard → Deployments → Function Logs
+- **Fix**: Verify DATABASE_URL is correct and uses connection pooling
 
-**Symptom**: "connection refused" or "too many connections"
+### "Connection refused" to database
 
-**Solution**:
-- Ensure you're using a connection pooler (Neon, Supabase pooler, or PgBouncer)
-- Verify `DATABASE_POOL_SIZE=1` and `DATABASE_MAX_OVERFLOW=0` in Vercel
-- Check SSL is enabled: add `?sslmode=require` to connection string
+- **Cause**: Wrong database URL or SSL required
+- **Fix**: Use the **pooled connection** string from Neon (not direct)
+- **Fix**: Add `?sslmode=require` to the end of DATABASE_URL if needed
 
-#### 2. Static Files Not Loading
+### Static files return 404
 
-**Symptom**: 404 errors for `/static/*` files
+- **Cause**: Routing issue
+- **Fix**: Check `vercel.json` routes are configured correctly
+- **Fix**: Verify files exist in `/openflow/web/static/`
 
-**Solution**:
-- Verify `vercel.json` routes are correct
-- Check files exist in `/web/static/` directory
-- Ensure `.vercelignore` doesn't exclude static files
+### CORS errors in browser
 
-#### 3. CORS Errors
+- **Cause**: Origin not allowed
+- **Fix**: Add your domain to `CORS_ORIGINS` in Vercel env variables
+- **Fix**: Or set `CORS_ORIGINS=["*"]` for testing (insecure!)
 
-**Symptom**: Browser console shows CORS errors
+### Module import errors
 
-**Solution**:
-- Update `CORS_ORIGINS` to include your Vercel domain
-- Use wildcard: `["https://*.vercel.app"]`
-- Check that credentials are allowed if using authentication
+- **Cause**: Missing dependencies
+- **Fix**: Check `requirements-vercel.txt` includes all needed packages
+- **Fix**: Redeploy after updating requirements
 
-#### 4. Cold Start Timeout
+---
 
-**Symptom**: First request times out or is very slow
+## Next Steps
 
-**Solution**:
-- Serverless mode is enabled (skips heavy initialization)
-- Increase function timeout in `vercel.json` (max 10s for hobby)
-- Consider upgrading to Vercel Pro for 60s timeout
+### Before Production Use
 
-#### 5. Module Import Errors
+1. ❌ **Implement Authentication**: Currently ALL endpoints are public
+2. ❌ **Add Authorization**: Implement role-based access control
+3. ❌ **Set DEBUG=false**: Disable debug mode
+4. ❌ **Use Production Environment**: Change `ENVIRONMENT=production`
+5. ❌ **Generate Secret Key**: Create strong `SECRET_KEY` for JWT tokens
+6. ❌ **Configure CORS Properly**: Restrict to your actual domains
+7. ❌ **Enable HTTPS Only**: Vercel does this automatically
+8. ❌ **Add Rate Limiting**: Prevent abuse
+9. ❌ **Setup Monitoring**: Use Vercel Analytics or Sentry
+10. ❌ **Database Backups**: Configure automated backups
 
-**Symptom**: "No module named X" errors
+### Optional Enhancements
 
-**Solution**:
-- Verify `requirements-vercel.txt` includes all dependencies
-- Check Python version compatibility (Vercel uses 3.9)
-- Add missing packages to `requirements-vercel.txt`
+- **Custom Domain**: Add in Vercel Dashboard → Project Settings → Domains
+- **Preview Deployments**: Automatic for each PR
+- **Environment-Specific Config**: Different settings for prod/preview/dev
+- **Vercel Cron**: For scheduled tasks (replaces Celery)
 
-### Performance Optimization
+---
 
-#### 1. Enable Vercel Edge Caching
+## What's Working
 
-Add cache headers to static responses:
+✅ FastAPI backend running serverless
+✅ Vanilla JavaScript frontend (no build needed)
+✅ Static file serving via Vercel routes
+✅ JSON-RPC API (`/jsonrpc`)
+✅ REST API (`/api/v1/*`)
+✅ Database connections (via pooling)
+✅ Redis caching
+✅ Fast cold starts (~1-3s)
 
-```python
-# In main.py
-@app.get("/health")
-async def health_check():
-    return Response(
-        content='{"status":"healthy"}',
-        headers={"Cache-Control": "public, max-age=60"}
-    )
-```
+## What's NOT Working
 
-#### 2. Use Vercel Edge Functions (Advanced)
+❌ Authentication/Authorization (disabled for testing)
+❌ Celery background tasks (use Vercel Cron instead)
+❌ Module system (disabled for faster cold starts)
+❌ File uploads > 4.5MB (Vercel limit)
+❌ Long-running requests > 10s (Hobby tier limit)
 
-Convert lightweight endpoints to Edge Functions for global distribution.
+---
 
-#### 3. Optimize Database Queries
+## Free Tier Limits
 
-- Use connection pooler (Neon, Supabase)
-- Add database indexes for frequently queried fields
-- Enable query result caching in Redis
+**Vercel (Hobby)**:
+- 100GB-hours compute/month
+- 10s function timeout
+- 100GB bandwidth/month
+- Unlimited deployments
 
-## Monitoring and Logs
+**Neon (Free)**:
+- 512MB storage
+- 1 project
+- Unlimited queries
 
-### View Logs
+**Upstash (Free)**:
+- 10,000 commands/day
+- 256MB storage
+- Global edge caching
 
+---
+
+## Viewing Logs
+
+### Via Vercel Dashboard
+1. Go to your project
+2. Click "Deployments"
+3. Click on a deployment
+4. Click "View Function Logs"
+
+### Via Vercel CLI
 ```bash
-# Using Vercel CLI
+npm i -g vercel
 vercel logs <deployment-url>
-
-# Or in Vercel Dashboard
-Project → Deployments → Click deployment → View Function Logs
 ```
 
-### Setup Monitoring
+---
 
-1. **Vercel Analytics**: Enable in Project Settings → Analytics
-2. **Error Tracking**: Integrate Sentry or similar
-3. **Database Monitoring**: Use Neon/Supabase built-in monitoring
+## Local Testing with Serverless Mode
 
-## Continuous Deployment
-
-### GitHub Actions (Optional)
-
-Create `.github/workflows/deploy.yml`:
-
-```yaml
-name: Deploy to Vercel
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v20
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./openflow
-```
-
-## Local Testing with Vercel
-
-Test serverless mode locally:
+Test locally before deploying:
 
 ```bash
 cd openflow
 
-# Install Vercel CLI
-npm i -g vercel
-
-# Set environment variables locally
+# Copy env template
 cp .env.vercel.example .env
 
-# Edit .env with your values
-# Make sure SERVERLESS=true
+# Edit .env with your database and Redis URLs
+nano .env
 
-# Run Vercel dev server
-vercel dev
+# Make sure these are set:
+# SERVERLESS=true
+# DATABASE_URL=<your-db-url>
+# REDIS_URL=<your-redis-url>
 
-# Test endpoints
-curl http://localhost:3000/health
-curl http://localhost:3000/web
+# Run locally
+poetry run uvicorn openflow.server.main:app --reload
+
+# Test
+curl http://localhost:8000/health
+open http://localhost:8000/web
 ```
 
-## Production Checklist
+Or use Vercel dev server:
 
-Before going live, verify:
+```bash
+npm i -g vercel
+cd openflow
+vercel dev
+```
 
-- [ ] Database connection pooler is configured
-- [ ] Redis (Upstash) is set up and connected
-- [ ] All environment variables are set in Vercel
-- [ ] `SECRET_KEY` is a strong, random value
-- [ ] Database migrations are applied
-- [ ] `DEBUG=false` in production
-- [ ] `SERVERLESS=true` is set
-- [ ] CORS origins include your domain
-- [ ] Health check endpoint returns 200
-- [ ] Frontend loads correctly at `/web`
-- [ ] API endpoints respond (test `/jsonrpc`, `/api/v1/...`)
-- [ ] Authentication flow works
-- [ ] Monitoring/logging is configured
+---
 
-## Cost Considerations
+## When to Use Traditional Hosting Instead
 
-### Free Tier Limits (Vercel Hobby)
+Consider Railway, Render, or Fly.io if you need:
 
-- **Functions**: 100GB-hours/month
-- **Function Duration**: 10 seconds max
-- **Deployments**: Unlimited
-- **Bandwidth**: 100GB/month
+- Celery/background workers
+- WebSocket connections
+- Large file uploads
+- Long-running processes (>60s)
+- Persistent filesystem
+- Always-warm instances
 
-### Recommended Upgrades
-
-If you exceed free tier:
-
-1. **Vercel Pro** ($20/month): 1000GB-hours, 60s timeout
-2. **Neon Pro** ($19/month): Better performance, more storage
-3. **Upstash** (Pay-as-you-go): Scales with usage
-
-## Security Best Practices
-
-1. **Never commit secrets**: Use `.env` files locally, environment variables in Vercel
-2. **Rotate secrets regularly**: Update `SECRET_KEY` periodically
-3. **Use HTTPS only**: Vercel provides automatic HTTPS
-4. **Enable rate limiting**: Add rate limiting middleware
-5. **Monitor access logs**: Review Vercel function logs regularly
-6. **Use strong database passwords**: Generate with password manager
-7. **Restrict CORS origins**: Only allow your actual domains
+---
 
 ## Support
-
-For issues:
 
 - **Vercel Docs**: https://vercel.com/docs
 - **Neon Docs**: https://neon.tech/docs
 - **Upstash Docs**: https://docs.upstash.com
-- **OpenFlow Issues**: Create issue in GitHub repository
 
-## Next Steps
-
-After successful deployment:
-
-1. Set up custom domain in Vercel Dashboard
-2. Configure SSL certificate (automatic with Vercel)
-3. Set up monitoring and alerts
-4. Create preview deployments for testing
-5. Document any custom configurations
-6. Set up backup strategy for database
-
----
-
-**Note**: Serverless deployment has limitations. For production workloads with heavy background processing, consider traditional hosting (Railway, Render, Fly.io).
+**Remember**: This is for testing only. Implement security before production!

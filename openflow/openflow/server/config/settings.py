@@ -48,13 +48,8 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://localhost:6379/1"
     celery_result_backend: str = "redis://localhost:6379/2"
 
-    # CORS
-    cors_origins: list[str] = [
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "https://*.vercel.app",
-        "https://*.vercel.com"
-    ]
+    # CORS - Allow all origins for testing (set specific origins for production)
+    cors_origins: list[str] = ["*"]  # Allow all origins for easy testing
     cors_allow_credentials: bool = True
     cors_allow_methods: list[str] = ["*"]
     cors_allow_headers: list[str] = ["*"]
